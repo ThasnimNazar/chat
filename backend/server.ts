@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import http from 'http';
 import { initializeSocketIO } from './Connections/socket';
+import { setupSwagger } from './swaggerConfig';
 
 
 
@@ -48,6 +49,8 @@ app.use('/api/user',userroute)
 app.get('/', (req: Request, res: Response) => {
   res.send('Hello, TypeScript + Node.js + Express!');
 });
+
+setupSwagger(app);
 
 server.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

@@ -13,17 +13,12 @@ interface AuthenticatedRequest extends Request {
 }
 
 const authenticateUser = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    console.log(req,'reeee')
-    console.log(req.headers,'headers')
     const token = req.cookies.userjwt;
-    console.log(token,'hh')
 
     if (token) {
         try {
             const decoded = jwt.verify(token, process.env.JWT_USER_SECRET as string) as DecodedTokenUser;
-            console.log(decoded,'decode')
             const user = await User.findById(decoded.id).select('-password') as UserDocument | null;
-            console.log(user,'pp')
 
             if (user) {
                 req.user = user;

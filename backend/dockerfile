@@ -1,0 +1,23 @@
+FROM node:18-alpine
+
+# Set the working directory inside the container to /app/backend
+WORKDIR /app/backend
+
+# Copy the package.json and package-lock.json to the working directory
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy backend code to the working directory
+COPY . .
+
+# Compile TypeScript to JavaScript (if applicable)
+RUN npm run prestart
+
+# Expose the application port (e.g., 3000)
+EXPOSE 5000
+
+# Command to start the application
+CMD ["npm", "start"]
+

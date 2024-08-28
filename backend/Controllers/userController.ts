@@ -16,38 +16,37 @@ const registerUser = async (req: Request, res: Response) => {
     try {
         const { name, email, phoneno, password, confirmPassword } = req.body;
 
-        if(!name || !email || !phoneno || !password || !confirmPassword){
+        if (!name || !email || !phoneno || !password || !confirmPassword) {
             return res.status(400).json({ message: 'All fields are required' });
         }
 
         if (password !== confirmPassword) {
-            res.status(400).json({ message: 'Password doesn\'t match' });
-            return;
+            return res.status(400).json({ message: 'Passwords do not match' });
         }
-        const userExist = await User.findOne({ email }) as (UserType & { _id: Types.ObjectId }) | null;
+
+        const userExist = await User.findOne({ email }).select('-password') as (UserType & { _id: Types.ObjectId }) | null;
 
         if (userExist) {
-            res.status(402).json({ message: 'user already exist' })
+            return res.status(402).json({ message: 'User already exists' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = new User({
-            name: name,
-            email: email,
-            phoneno: phoneno,
+            name,
+            email,
+            phoneno,
             password: hashedPassword,
             role: 'user'
-        })
+        });
 
         await user.save();
 
         const token = generateUserToken(res, user._id as Types.ObjectId);
 
-        res.status(200).json({ message: 'successfully completed registeration', user, token })
+        const userWithoutPassword = await User.findById(user._id).select('-password').lean();
 
-
-
+        res.status(200).json({ message: 'Successfully completed registration', user: userWithoutPassword, token });
     }
     catch (error) {
         if (error instanceof Error) {
@@ -67,7 +66,7 @@ const userLogin = asyncHandler(async (req: Request, res: Response) => {
             return 
         }
 
-        const user = await User.findOne({ email }) as (UserType & { _id: Types.ObjectId }) | null;
+        const user = await User.findOne({ email }).select('-password') as (UserType & { _id: Types.ObjectId }) | null;
 
         if (!user) {
             res.status(402).json({ message: "user dont exists" })
@@ -82,8 +81,8 @@ const userLogin = asyncHandler(async (req: Request, res: Response) => {
         }
 
 
-        generateUserToken(res, user?._id);
-        res.status(200).json({ message: 'user logged in successfully', user });
+        const token = generateUserToken(res, user?._id);
+        res.status(200).json({ message: 'user logged in successfully', user,token });
     }
     catch (error) {
         if (error instanceof Error) {
@@ -96,12 +95,11 @@ const userLogin = asyncHandler(async (req: Request, res: Response) => {
 
 const userLogout = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     try {
-        console.log('logout')
         res.cookie('userjwt', '', {
             httpOnly: true,
             expires: new Date(0)
         })
-        res.status(200).json({ message: 'logout user' })
+        res.status(200).json({ message: 'user logout' })
     }
     catch (error) {
         if (error instanceof Error) {
@@ -277,7 +275,6 @@ const getMessages = asyncHandler(async (req: Request<{ chatId: string }>, res: R
 const addParticipantsToGroup = async (req: CustomRequest, res: Response) => {
     try {
         const { chatId, participantIds } = req.body;
-        console.log(req.body,'body')
 
         if (!req.user) {
             return res.status(401).json({ message: 'User not authenticated' });
